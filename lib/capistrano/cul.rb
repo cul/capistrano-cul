@@ -1,7 +1,2 @@
-require "capistrano/cul/version"
-
-module Capistrano
-  module Cul
-    # Your code goes here...
-  end
-end
+require_relative 'cul/tasks'
+require_relative 'cul/hooks'

@@ -1,0 +1,28 @@
+namespace :cul do
+  desc "Add tag based on current version from VERSION file"
+  task :auto_tag do
+    current_version = "v#{IO.read("VERSION").strip}"
+
+    ask(:tag, current_version)
+    tag = fetch(:tag)
+
+    system("git tag -a #{tag} -m 'auto-tagged' && git push origin --tags")
+  end
+
+  desc "Deploy downtime branch"
+  task :downtime do
+    on roles(:web) do
+      downtime_path = deploy_path.join("downtime")
+      execute :rm, "-rf", downtime_path if test "[ -d #{downtime_path} ]"
+      execute :mkdir, "-p", downtime_path
+
+      within repo_path do
+        execute :git, :archive, 'downtime', "| #{SSHKit.config.command_map[:tar]} -x -f - -C", downtime_path
+      end
+
+      tmp_current_path = releases_path.join(current_path.basename)
+      execute :ln, "-s", downtime_path, tmp_current_path
+      execute :mv, tmp_current_path, current_path.parent
+    end
+  end
+end
