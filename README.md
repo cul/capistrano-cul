@@ -1,16 +1,17 @@
 # Capistrano::Cul
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/capistrano/cul`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Capistrano v3 tasks shared across CUL projects.
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'capistrano-cul'
+gem 'capistrano-cul', git: 'https://github.com/cul/capistrano-cul'
 ```
+
+_Note:_ If installing in a rails application, should only be in `:development` and `:test` groups.
+
 
 And then execute:
 
@@ -20,9 +21,20 @@ Or install it yourself as:
 
     $ gem install capistrano-cul
 
-## Usage
+In your application's `Capfile` include:
 
-TODO: Write usage instructions here
+```
+require 'capistrano/cul'
+```
+
+## Usage
+Two tasks are provided as part of this gem:
+1. `cap {env} cul:auto_tag`
+
+   Tags the current commit as the version number provided in `VERSION`.
+2. `cap {env} cul:downtime`
+
+   Pulls down the downtime branch of the repository to a `/downtime` directory and symlinks `current` to `downtime`. To undo this action, redeploy your application.
 
 ## Development
 
@@ -32,7 +44,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/capistrano-cul.
+Bug reports and pull requests are welcome on GitHub at https://github.com/cul/capistrano-cul.
 
 ## License
 
