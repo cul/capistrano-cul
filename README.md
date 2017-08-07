@@ -2,15 +2,18 @@
 
 Capistrano v3 tasks shared across CUL projects.
 
+This gem provides common cap tasks that are used in almost every cul project. It also includes a set of cap tasks and hooks that are specific for Wordpress deployments. Do not include the Wordpress library if you are not deploying a Wordpress site.
+
 ## Installation
 
+#### Install gem
 Add this line to your application's Gemfile:
 
 ```ruby
 gem 'capistrano-cul', git: 'https://github.com/cul/capistrano-cul'
 ```
 
-_Note:_ If installing in a rails application, should only be in `:development` and `:test` groups.
+_Note:_ If installing in a rails application, gem should only be installed in `:development` and `:test` groups.
 
 
 And then execute:
@@ -21,10 +24,17 @@ Or install it yourself as:
 
     $ gem install capistrano-cul
 
-In your application's `Capfile` include:
+#### Add Capistrano libraries to `Capfile`
+In your application's `Capfile` include for shared tasks:
 
 ```
 require 'capistrano/cul'
+```
+
+For wordpress deployments, in your application's `Capfile` include:
+```
+require 'capistrano/cul'
+require 'capistrano/cul/wp'
 ```
 
 ## Usage
@@ -35,6 +45,8 @@ Two tasks are provided as part of this gem:
 2. `cap {env} cul:downtime`
 
    Pulls down the downtime branch of the repository to a `/downtime` directory and symlinks `current` to `downtime`. To undo this action, redeploy your application.
+
+## Wordpress library `capistrano/cul/wp`
 
 ## Development
 
