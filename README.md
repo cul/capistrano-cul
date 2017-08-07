@@ -6,7 +6,7 @@ This gem provides common cap tasks that are used in almost every cul project. It
 
 ## Installation
 
-#### Install gem
+### Install gem
 Add this line to your application's Gemfile:
 
 ```ruby
@@ -24,21 +24,21 @@ Or install it yourself as:
 
     $ gem install capistrano-cul
 
-#### Add Capistrano libraries to `Capfile`
-In your application's `Capfile` include for shared tasks:
+### Add Cul::Capistrano tasks to `Capfile`
+In your application's `Capfile` include:
 
 ```
 require 'capistrano/cul'
 ```
 
-For wordpress deployments, in your application's `Capfile` include:
+For Wordpress deployments, in your application's `Capfile` additionally include:
 ```
 require 'capistrano/cul'
 require 'capistrano/cul/wp'
 ```
 
 ## Usage
-Two tasks are provided as part of this gem:
+### Shared cap tasks (part of `capistrano/cul`)
 1. `cap {env} cul:auto_tag`
 
    Tags the current commit as the version number provided in `VERSION`.
@@ -46,7 +46,13 @@ Two tasks are provided as part of this gem:
 
    Pulls down the downtime branch of the repository to a `/downtime` directory and symlinks `current` to `downtime`. To undo this action, redeploy your application.
 
-## Wordpress library `capistrano/cul/wp`
+### Wordpress specific tasks (part of `capistrano/cul/wp`)
+Tasks are provided to deploy, setup and update Wordpress instances.
+1. `cap {env} cul:wp:setup`
+2. `cap {env} cul:wp:update:core`
+3. `cap {env} cul:wp:update:plugins`
+4. `cap {env} cul:wp:update:themes`
+5. `cap {env} cul:wp:update:all`
 
 ## Development
 
