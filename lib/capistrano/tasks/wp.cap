@@ -102,7 +102,6 @@ namespace :cul do
       end
     end
 
-
     def self.require_cap_params!(vars)
       validate vars do |key, value|
         if value.nil? || value.empty?
