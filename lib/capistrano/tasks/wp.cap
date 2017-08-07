@@ -2,15 +2,15 @@ namespace :cul do
   namespace :wp do
     after :deploy, 'cul:wp:symlink_custom_plugins_and_themes'
 
-    desc "Creates symlinks for custom plugin and themes"
+    desc "Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook."
     task :symlink_custom_plugins_and_themes do
       symlink_custom_plugins_and_themes
     end
 
     # Runs normal deploy task, downloads new copy of WP, sets up docroot, runs
     # deploy command, sets up symlinks. Does not run WP install and does not
-    # create new wp users.
-    desc "Sets up a WordPress deployment; does not install wordpress"
+    # create any wp users.
+    desc "Sets up a WordPress docroot and runs deployment; does not install wordpress and does not create any users"
     task :setup do
       puts "Deploying repo branch: #{fetch(:branch)}"
 
@@ -81,7 +81,7 @@ namespace :cul do
       symlink_custom_plugins_and_themes
     end
 
-    desc "Runs WP install and creates new wp users for a new WordPress instance."
+    desc "Runs a WordPress installation for a newly set up instance and creates a new admin user"
     task :install do
       puts "Please provide administrative credentials:"
       ask(:admin_user, "Admin username:")

@@ -49,10 +49,19 @@ require 'capistrano/cul/wp'
 ### Wordpress specific tasks (part of `capistrano/cul/wp`)
 Tasks are provided to deploy, setup and update Wordpress instances.
 1. `cap {env} cul:wp:setup`
-2. `cap {env} cul:wp:update:core`
-3. `cap {env} cul:wp:update:plugins`
-4. `cap {env} cul:wp:update:themes`
-5. `cap {env} cul:wp:update:all`
+   Sets up a WordPress docroot and runs deployment; does not install WordPress and does not create any users.
+2. `cap {env} cul:wp:install`
+   Runs a WordPress installation for a newly set up instance and creates a new admin user.
+3. `cap {env} cul:wp:symlink_custom_plugins_and_themes`
+   Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook.
+4. `cap {env} cul:wp:update:core`
+   Updates WordPress core to the latest version.
+5. `cap {env} cul:wp:update:plugins`
+  Updates non-repo-managed plugins to the latest version.
+6. `cap {env} cul:wp:update:themes`
+   Updates non-repo-managed themes to the latest version.
+7. `cap {env} cul:wp:update:all`
+   Updates WordPress core, plugins, and themes (in that order) by calling update:core, update:plugins and update:themes tasks.
 
 ## Development
 
