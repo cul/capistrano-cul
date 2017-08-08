@@ -10,7 +10,7 @@ This gem provides common cap tasks that are used in almost every cul project. It
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'capistrano-cul', git: 'https://github.com/cul/capistrano-cul'
+gem 'capistrano-cul'
 ```
 
 _Note:_ If installing in a rails application, gem should only be installed in `:development` and `:test` groups.
@@ -73,11 +73,30 @@ require 'capistrano/cul/wp'
 #### Configurable variables
 The Wordpress tasks listed above require the following variables .
 ```ruby
-set :wp_docroot # description here
-set :wp_data_path # description here
-set :url # description here
-set :title # description here
-set :multisite # description here
+set :wp_docroot # (string) Path to webserver document root for site
+set :wp_data_path # (string) Path to data directory (outside of wp_docroot) that contains wp-content
+set :url # (string) Public website URL
+set :title # (string) Website title
+set :multisite # (boolean) Whether or not this is a multisite wordpress installation
+set :wp_custom_plugins # (hash) Map of custom plugin file/directory names to repo-relative paths
+set :wp_custom_themes # (hash) Map of custom theme file/directory names to repo-relative paths
+```
+
+Here's a sample configuration:
+
+```ruby
+set :wp_docroot, "#{fetch(:deploy_to)}/wp_docroot"
+set :wp_data_path, "/path/to/data/directory/#{fetch(:application)}_#{fetch(:stage)}"
+set :multisite, false
+set :title, 'Amazing WordPress Site'
+
+set :wp_custom_plugins, {
+  'custom-plugin-file.php' => 'plugins/custom-plugin-file.php',
+  'custom-plugin-directory' => 'plugins/custom-plugin-directory'
+}
+set :wp_custom_themes, {
+  'mytheme' => 'themes/mytheme'
+}
 ```
 
 ## Development
