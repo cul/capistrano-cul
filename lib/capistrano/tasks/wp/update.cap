@@ -1,0 +1,39 @@
+namespace :cul do
+  namespace :wp do
+    namespace :update do
+      desc "Updates WordPress core to the latest version."
+      task :core do
+        on roles(:web) do
+          within fetch(:wp_docroot) do
+            execute :wp, 'core', 'update'
+          end
+        end
+      end
+
+      desc "Updates non-repo-managed plugins to the latest version."
+      task :plugins do
+        on roles(:web) do
+          within fetch(:wp_docroot) do
+            execute :wp, 'plugin', 'update', '--all'
+          end
+        end
+      end
+
+      desc "Updates non-repo-managed themes to the latest version."
+      task :themes do
+        on roles(:web) do
+          within fetch(:wp_docroot) do
+            execute :wp, 'theme', 'update', '--all'
+          end
+        end
+      end
+
+      desc "Updates WordPress core, plugins, and themes (in that order)."
+      task :all do
+        invoke 'cul:wp:update:core'
+        invoke 'cul:wp:update:plugins'
+        invoke 'cul:wp:update:themes'
+      end
+    end
+  end
+end

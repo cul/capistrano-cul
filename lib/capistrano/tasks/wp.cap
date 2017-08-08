@@ -1,0 +1,137 @@
+namespace :cul do
+  namespace :wp do
+    after :deploy, 'cul:wp:symlink_custom_plugins_and_themes'
+
+    desc "Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook."
+    task :symlink_custom_plugins_and_themes do
+      symlink_custom_plugins_and_themes
+    end
+
+    # Runs normal deploy task, downloads new copy of WP, sets up docroot, runs
+    # deploy command, sets up symlinks. Does not run WP install and does not
+    # create any wp users.
+    desc "Sets up a WordPress docroot and runs deployment; does not install wordpress and does not create any users"
+    task :setup do
+      puts "Deploying repo branch: #{fetch(:branch)}"
+
+      set :wp_version, ask('WordPress version to download:', 'latest')
+      # Printing out wp_version here because the `set` command above only runs
+      # the first time its associated symbol is referenced, and we want to
+      # capture version before running any other commands.
+      puts "Setting up wp_version: #{fetch(:wp_version)}"
+
+      require_cap_params!([:branch, :wp_version, :wp_docroot, :wp_data_path])
+
+      on roles(:web) do
+        wp_docroot_wp_config_file_path = File.join(fetch(:wp_docroot), 'wp-config.php')
+        wp_docroot_robots_txt_file_path = File.join(fetch(:wp_docroot), 'robots.txt')
+        wp_docroot_wp_content_path = File.join(fetch(:wp_docroot), 'wp-content')
+
+        shared_wp_config_file_path = shared_path.join('wp-config.php')
+        shared_robots_txt_file_path = shared_path.join('robots.txt')
+
+        wp_data_wp_content_path = File.join(fetch(:wp_data_path), 'wp-content')
+
+        invoke 'deploy' # Deploy before doing setup
+
+        # Create nginx logs directory if it doesn't already exist
+        execute :mkdir, '-p', deploy_path.join('logs')
+
+        # Make full path to wp_docroot directory if not exist
+        execute :mkdir, '-p', fetch(:wp_docroot)
+
+        # Make full path to wp_data_path if not exist
+        execute :mkdir, '-p', fetch(:wp_data_path)
+
+        # If wp_docroot/wp-includes does not exist, do wordpress download
+        unless test("[ -d #{File.join(fetch(:wp_docroot), 'wp-includes')} ]")
+          # Download and unpack new WP instance to wp_docroot
+          execute :wp, 'core', ['download', "--version=#{fetch(:wp_version)}", "--path=#{fetch(:wp_docroot)}"]
+        end
+
+        # Check for wp-config.php file in shared. Create if it doesn't exist.
+        unless test("[ -f #{shared_wp_config_file_path} ]")
+          # If no wp-config.php file is found in the 'shared' directory, copy WordPress built-in wp-config-sample.php to there
+          execute :cp, File.join(fetch(:wp_docroot), 'wp-config-sample.php'), shared_wp_config_file_path
+        end
+
+        # Delete original wp-sample-config.php
+        execute :rm, '-f', File.join(fetch(:wp_docroot), 'wp-config-sample.php')
+        # Create symlink for wp_document_root wp-config.php to 'shared' version.
+        execute :ln, '-sf', shared_wp_config_file_path, wp_docroot_wp_config_file_path
+
+        # Check for robots.txt file in shared. Create if it doesn't exist.
+        unless test("[ -f #{shared_robots_txt_file_path} ]")
+          execute "echo -e \"User-agent: *\nDisallow: /\" > #{shared_robots_txt_file_path}"
+        end
+        # Create symlink for wp_document_root robots.txt to 'shared' version.
+        execute :ln, '-sf', shared_robots_txt_file_path, wp_docroot_robots_txt_file_path
+
+        # Check for wp-content directory at wp_data_wp_content_path. Create if it doesn't exist.
+        unless test("[ -d #{wp_data_wp_content_path} ]")
+          # If no wp-config.php file is found in the 'shared' directory, copy WordPress built-in wp-config-sample.php to there
+          execute :cp, '-r', wp_docroot_wp_content_path, wp_data_wp_content_path
+        end
+        # Delete original wp-content directory
+        execute :rm, '-rf', wp_docroot_wp_content_path
+        # Create symlink for wp_document_root wp-content to wp_data_wp_content_path
+        execute :ln, '-sf', wp_data_wp_content_path, wp_docroot_wp_content_path
+      end
+
+      symlink_custom_plugins_and_themes
+    end
+
+    desc "Runs a WordPress installation for a newly set up instance and creates a new admin user"
+    task :install do
+      puts "Please provide administrative credentials:"
+      ask(:admin_user, "Admin username:")
+      ask(:admin_password, "Admin password:")
+      ask(:admin_email, "Admin email:")
+
+      require_cap_params!([:url, :title, :admin_user, :admin_password, :admin_email])
+
+      on roles(:web) do
+        within fetch(:wp_docroot) do
+          execute :wp, 'core', fetch(:multisite) ? 'multisite-install' : 'install',
+            "--url='#{fetch(:url)}'",
+            "--title='#{fetch(:title)}'",
+            "--admin_user='#{fetch(:admin_user)}'",
+            "--admin_password='#{fetch(:admin_password)}'",
+            "--admin_email='#{fetch(:admin_email)}'"
+        end
+      end
+    end
+
+    def self.require_cap_params!(vars)
+      validate vars do |key, value|
+        if value.nil? || value.empty?
+          raise Capistrano::ValidationError, "Missing required parameter #{key}"
+        end
+      end
+    end
+
+    def self.symlink_custom_plugins_and_themes
+      on roles(:web) do
+        wp_data_wp_content_path = File.join(fetch(:wp_data_path), 'wp-content')
+        wp_data_plugin_path = File.join(wp_data_wp_content_path, 'plugins')
+        wp_data_themes_path = File.join(wp_data_wp_content_path, 'themes')
+
+        if test("[ -d #{wp_data_wp_content_path} ]")
+          # Remove old symlinks
+          [wp_data_plugin_path, wp_data_themes_path].each do |dir|
+            execute :find, dir, '-maxdepth 1', '-type l', '-exec rm {} \;'
+          end
+
+          # Add latest symlinks
+          fetch(:wp_custom_plugins, {}).each do |plugin, repo_relative_path|
+            execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_data_plugin_path, plugin)
+          end
+
+          fetch(:wp_custom_themes, {}).each do |theme, repo_relative_path|
+            execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_data_themes_path, theme)
+          end
+        end
+      end
+    end
+  end
+end
