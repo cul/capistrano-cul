@@ -38,7 +38,7 @@ require 'capistrano/cul/wp'
 ```
 
 ## Usage
-### Shared cap tasks (part of `capistrano/cul`)
+### Shared cap tasks (`capistrano/cul`)
 1. `cap {env} cul:auto_tag`
 
    Tags the current commit as the version number provided in `VERSION`.
@@ -46,8 +46,8 @@ require 'capistrano/cul/wp'
 
    Pulls down the downtime branch of the repository to a `/downtime` directory and symlinks `current` to `downtime`. To undo this action, redeploy your application.
 
-### Wordpress specific tasks (part of `capistrano/cul/wp`)
-Tasks are provided to deploy, setup and update Wordpress instances.
+### Wordpress deployment (`capistrano/cul/wp`)
+#### Tasks
 1. `cap {env} cul:wp:setup`
 
    Sets up a WordPress docroot and runs deployment; does not install WordPress and does not create any users.
@@ -69,6 +69,16 @@ Tasks are provided to deploy, setup and update Wordpress instances.
 7. `cap {env} cul:wp:update:all`
 
    Updates WordPress core, plugins, and themes (in that order) by calling update:core, update:plugins and update:themes tasks.
+
+#### Configurable variables
+The Wordpress tasks listed above require the following variables .
+```ruby
+set :wp_docroot # description here
+set :wp_data_path # description here
+set :url # description here
+set :title # description here
+set :multisite # description here
+```
 
 ## Development
 
