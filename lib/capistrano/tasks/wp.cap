@@ -113,6 +113,7 @@ namespace :cul do
     def self.symlink_custom_plugins_and_themes
       on roles(:web) do
         wp_data_wp_content_path = File.join(fetch(:wp_data_path), 'wp-content')
+        wp_data_mu_plugin_path = File.join(wp_data_wp_content_path, 'mu-plugins')
         wp_data_plugin_path = File.join(wp_data_wp_content_path, 'plugins')
         wp_data_themes_path = File.join(wp_data_wp_content_path, 'themes')
 
@@ -125,6 +126,10 @@ namespace :cul do
           # Add latest symlinks
           fetch(:wp_custom_plugins, {}).each do |plugin, repo_relative_path|
             execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_data_plugin_path, plugin)
+          end
+
+          fetch(:wp_custom_mu_plugins, {}).each do |mu_plugin, repo_relative_path|
+            execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_data_mu_plugin_path, mu_plugin)
           end
 
           fetch(:wp_custom_themes, {}).each do |theme, repo_relative_path|

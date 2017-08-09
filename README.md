@@ -79,6 +79,7 @@ set :url # (string) Public website URL
 set :title # (string) Website title
 set :multisite # (boolean) Whether or not this is a multisite wordpress installation
 set :wp_custom_plugins # (hash) Map of custom plugin file/directory names to repo-relative paths
+set :wp_custom_mu_plugins # (hash) Map of custom MUST-USE plugin file/directory names to repo-relative paths
 set :wp_custom_themes # (hash) Map of custom theme file/directory names to repo-relative paths
 ```
 
