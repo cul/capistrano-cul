@@ -85,7 +85,7 @@ namespace :cul do
     task :install do
       puts "Please provide administrative credentials:"
       ask(:admin_user, "Admin username:")
-      ask(:admin_password, "Admin password:")
+      ask(:admin_password, "Admin password:", echo: false)
       ask(:admin_email, "Admin email:")
 
       require_cap_params!([:url, :title, :admin_user, :admin_password, :admin_email])
@@ -140,6 +140,27 @@ namespace :cul do
 
           fetch(:wp_custom_themes, {}).each do |theme, repo_relative_path|
             execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_data_themes_path, theme)
+          end
+        end
+      end
+    end
+
+    desc "Runs a search and replace operation on the tables in a WordPress installation"
+    task :searchreplace do
+      on roles(:web) do
+        within fetch(:wp_docroot) do
+          set :search_string, ask("search string")
+          set :replacement_string, ask("replacement string")
+          puts "Are you sure you want to replace all occurrences of \"#{fetch(:search_string)}\" with \"#{fetch(:replacement_string)}\"?"
+          set :confirm, ask('"y" or "yes" to continue')
+          if fetch(:confirm) == 'y' || fetch(:confirm) == 'yes'
+            puts 'Running search and replace. This may take a while for large databases...'
+            start_time = Time.now
+            #execute :wp, 'search-replace', "'#{search_string}'", "'#{replacement_string}'", '--skip-columns=guid'
+            execute :wp, 'search-replace', "'#{fetch(:search_string)}'", "'#{fetch(:replacement_string)}'", '--skip-columns=guid'
+            puts "Search and replace complete (took #{(Time.now - start_time).to_s} seconds)"
+          else
+            puts 'Search and replace operation has been cancelled because "y" or "yes" were not entered.'
           end
         end
       end

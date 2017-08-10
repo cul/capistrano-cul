@@ -57,16 +57,19 @@ require 'capistrano/cul/wp'
 3. `cap {env} cul:wp:symlink_custom_plugins_and_themes`
 
    Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook.
-4. `cap {env} cul:wp:update:core`
+4. `cap {env} cul:wp:searchreplace`
+
+   Runs a search and replace operation on the tables in a WordPress installation.
+5. `cap {env} cul:wp:update:core`
 
    Updates WordPress core to the latest version.
-5. `cap {env} cul:wp:update:plugins`
+6. `cap {env} cul:wp:update:plugins`
 
    Updates non-repo-managed plugins to the latest version.
-6. `cap {env} cul:wp:update:themes`
+7. `cap {env} cul:wp:update:themes`
 
    Updates non-repo-managed themes to the latest version.
-7. `cap {env} cul:wp:update:all`
+8. `cap {env} cul:wp:update:all`
 
    Updates WordPress core, plugins, and themes (in that order) by calling update:core, update:plugins and update:themes tasks.
 
