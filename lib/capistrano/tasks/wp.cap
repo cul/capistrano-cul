@@ -113,11 +113,17 @@ namespace :cul do
     def self.symlink_custom_plugins_and_themes
       on roles(:web) do
         wp_data_wp_content_path = File.join(fetch(:wp_data_path), 'wp-content')
-        wp_data_mu_plugin_path = File.join(wp_data_wp_content_path, 'mu-plugins')
         wp_data_plugin_path = File.join(wp_data_wp_content_path, 'plugins')
+        wp_data_mu_plugin_path = File.join(wp_data_wp_content_path, 'mu-plugins')
         wp_data_themes_path = File.join(wp_data_wp_content_path, 'themes')
 
         if test("[ -d #{wp_data_wp_content_path} ]")
+
+          # Create necessary directories
+          execute :mkdir, '-p', wp_data_plugin_path
+          execute :mkdir, '-p', wp_data_mu_plugin_path
+          execute :mkdir, '-p', wp_data_themes_path
+
           # Remove old symlinks
           [wp_data_plugin_path, wp_data_themes_path].each do |dir|
             execute :find, dir, '-maxdepth 1', '-type l', '-exec rm {} \;'
