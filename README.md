@@ -10,7 +10,7 @@ This gem provides common cap tasks that are used in almost every cul project. It
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'capistrano-cul'
+gem 'capistrano-cul', require: false
 ```
 
 _Note:_ If installing in a rails application, gem should only be installed in `:development` and `:test` groups.
