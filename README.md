@@ -89,8 +89,8 @@ set :wp_custom_themes # (hash) Map of custom theme file/directory names to repo-
 Here's a sample configuration:
 
 ```ruby
-set :wp_docroot, "#{fetch(:deploy_to)}/wp_docroot"
-set :wp_data_path, "/path/to/data/directory/#{fetch(:application)}_#{fetch(:stage)}"
+set :wp_docroot, "#{fetch(:deploy_to)}/wp-docroot"
+set :wp_content_path, "#{fetch(:deploy_to)}/wp-content"
 set :multisite, false
 set :title, 'Amazing WordPress Site'
 
