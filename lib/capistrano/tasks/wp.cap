@@ -153,17 +153,28 @@ namespace :cul do
           set :replacement_string, ask("replacement string")
           puts "Are you sure you want to replace all occurrences of \"#{fetch(:search_string)}\" with \"#{fetch(:replacement_string)}\"?"
           set :confirm, ask('"y" or "yes" to continue')
-          if fetch(:confirm) == 'y' || fetch(:confirm) == 'yes'
-            puts 'Running search and replace. This may take a while for large databases...'
-            start_time = Time.now
-            #execute :wp, 'search-replace', "'#{search_string}'", "'#{replacement_string}'", '--skip-columns=guid'
-            execute :wp, 'search-replace', "'#{fetch(:search_string)}'", "'#{fetch(:replacement_string)}'", '--skip-columns=guid'
-            puts "Search and replace complete (took #{(Time.now - start_time).to_s} seconds)"
-          else
-            puts 'Search and replace operation has been cancelled because "y" or "yes" were not entered.'
+
+          unless ['y', 'yes'].include?(fetch(:confirm))
+            puts 'Search and replace operation has been cancelled because neither "y" nor "yes" were entered.'
+            next
           end
+
+          puts 'Running search and replace. This may take a while for large databases...'
+          start_time = Time.now
+
+          if fetch(:multisite, false)
+            puts "Since this is a multisite, you'll need to specify the source multisite url to continue:"
+            set :multisite_url, ask('full multisite install url (e.g. https://blogs.cul.columbia.edu)')
+
+            execute :wp, "--url=#{fetch(:multisite_url)}", 'search-replace', "'#{fetch(:search_string)}'", "'#{fetch(:replacement_string)}'", '--all-tables', '--skip-columns=guid'
+          else
+            execute :wp, 'search-replace', "'#{fetch(:search_string)}'", "'#{fetch(:replacement_string)}'", '--skip-columns=guid'
+          end
+
+          puts "Search and replace complete (took #{(Time.now - start_time).to_s} seconds)"
         end
       end
     end
+
   end
 end

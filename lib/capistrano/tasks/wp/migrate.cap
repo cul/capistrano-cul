@@ -1,0 +1,133 @@
+namespace :cul do
+  namespace :wp do
+    namespace :migrate do
+
+      desc "Copies the WordPress installation from one environment to another (e.g. prod to dev)"
+      task :copy_from do
+
+        require_cap_params!([:wp_docroot, :wp_content_path])
+
+        # TODO: Verify that destination wordpress has already had the setup and deploy tasks run for it
+        set :src_wp_docroot, ask("server path to source WordPress installation (to copy from)")
+        #set :src_wp_docroot, '/cul/cul0/lito/vmounts/haydn/var-www/kennedyprize/html'
+        #set :src_wp_docroot, '/cul/cul0/ldpd/culblogs-prod-migration-copy/prod/ssl-html'
+
+        # Confirm operation because it is destructive
+        puts "\nWARNING: This operation will obliterate all content in environment [#{fetch(:stage)}] and replace it with content from [#{fetch(:src_wp_docroot)}]."
+        puts "Are you sure you want to continue?"
+        set :confirm, ask('"y" or "yes" to continue')
+        unless ['y', 'yes'].include?(fetch(:confirm))
+          puts 'Copy operation has been cancelled because neither "y" nor "yes" were entered.'
+          next
+        end
+
+        # Check WP version on source and destination WordPress instances
+        on roles(:web) do
+          within fetch(:src_wp_docroot) do
+            # Ensure that source WordPress is running the latest version
+            result = capture :wp, 'core', 'check-update'
+            unless result.index('Success')
+              puts 'Could not copy from source WordPress because it is not running the latest version of WordPress. Please update source before running a copy operation.'
+            end
+          end
+
+          within fetch(:wp_docroot) do
+            # Ensure that destination WordPress is running the latest version
+            result = capture :wp, 'core', 'check-update'
+            unless result.index('Success')
+              puts "Could not copy TO destination [#{fetch(:stage)}] WordPress because it is not running the latest version of WordPress. Please update [#{fetch(:stage)}] before running a copy operation."
+            end
+          end
+        end
+
+        on roles(:web) do
+
+          db_export_tempfile_path = ''
+
+          within fetch(:src_wp_docroot) do
+            # On source WordPress...
+
+            # Export source WP DB to a temporary file
+            db_export_tempfile_path = Dir::Tmpname.make_tmpname '/tmp/', 'db_export_tempfile.sql'
+            execute :wp, 'db', 'export', db_export_tempfile_path
+          end
+
+          within fetch(:wp_docroot) do
+            # On destination WordPress...
+
+            # Drop all tables
+            execute :wp, 'db', 'reset', '--yes'
+
+            # Read in db file
+            execute :wp, 'db', 'import', db_export_tempfile_path
+
+            # Delete db file now that we're done with it
+            execute :rm, db_export_tempfile_path
+
+            # Delete and recreate the wp-content directory
+            execute :rm, '-rf', fetch(:wp_content_path)
+            execute :mkdir, fetch(:wp_content_path)
+
+            # Copy wp content from source, ignoring .nfs* lock files
+            # Note that because we have the '--copy-links' flag below, we're transforming all symlinks into real file copies
+            rsync_params = [
+              '--recursive',
+              '--perms',
+              '--times',
+              '--devices',
+              '--specials',
+              '--copy-links'
+            ]
+            # Exclude all repo-managed plugins, mu_plugins and themes
+            fetch(:wp_custom_plugins, {}).each do |plugin, repo_relative_path|
+              rsync_params << "--exclude plugins/#{plugin}"
+            end
+            fetch(:wp_custom_mu_plugins, {}).each do |mu_plugin, repo_relative_path|
+              rsync_params << "--exclude mu-plugins/#{mu_plugin}"
+            end
+
+            fetch(:wp_custom_themes, {}).each do |theme, repo_relative_path|
+              rsync_params << "--exclude themes/#{theme}"
+            end
+
+            # Exclude .nfs* lock files
+            rsync_params << '--exclude .nfs*'
+
+            # Define copy src
+            rsync_params << File.join(fetch(:src_wp_docroot), 'wp-content/')
+
+            # Define copy dest
+            rsync_params << fetch(:wp_content_path) + '/'
+
+            puts 'Copying wp-content. This may take a while for sites with a lot of uploads, plugins or themes...'
+
+            execute :rsync, *rsync_params
+
+            # Regenerate symlinks
+            invoke 'cul:wp:symlink_custom_plugins_and_themes'
+
+            # Make docroot readable and executable for "other" user so nginx, which runs as "nobody", can read
+            #execute :chmod, 'o+rx', fetch(:wp_docroot)
+            execute :find, fetch(:wp_docroot), '-type d -exec chmod o+rx "{}" \;'
+            execute :find, fetch(:wp_docroot), '-type f -exec chmod o+r "{}" \;'
+
+            # Invoke searchreplace task to update URL
+            puts "\nYou'll probably want to run the cul:wp:searchreplace command now, since it's likely that your WP URL differs between environments."
+            puts "Do you want to run a search and replace operation?"
+            set :confirm_searchreplace, ask('"y" or "yes" to continue')
+            if ['y', 'yes'].include?(fetch(:confirm_searchreplace))
+              invoke 'cul:wp:searchreplace'
+            else
+              puts '- Skipping search and replace because neither "y" nor "yes" were entered.'
+            end
+
+            puts "\nCopy operation complete!"
+          end
+
+        end
+
+      end
+
+    end
+  end
+end
