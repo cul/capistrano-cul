@@ -7,10 +7,20 @@ namespace :cul do
 
         require_cap_params!([:wp_docroot, :wp_content_path])
 
+        if fetch(:multisite, false)
+          puts "Since this is a multisite, you'll need to specify the source instance multisite url to continue:"
+          set :source_site_multisite_url, ask('source multisite full install url (e.g. https://blogs.cul.columbia.edu)')
+          fetch(:source_site_multisite_url)
+
+          puts "And you'll also need to specify the destination instance multisite url to continue:"
+          set :destination_site_multisite_url, ask('destination multisite full install url (e.g. https://blogs-dev.cul.columbia.edu)')
+          fetch(:destination_site_multisite_url)
+        end
+
         # TODO: Verify that destination wordpress has already had the setup and deploy tasks run for it
         set :src_wp_docroot, ask("server path to source WordPress installation (to copy from)")
         #set :src_wp_docroot, '/cul/cul0/lito/vmounts/haydn/var-www/kennedyprize/html'
-        #set :src_wp_docroot, '/cul/cul0/ldpd/culblogs-prod-migration-copy/prod/ssl-html'
+        #set :src_wp_docroot, '/cul/cul0/ldpd/culblogs/prod/ssl-html'
 
         # Confirm operation because it is destructive
         puts "\nWARNING: This operation will obliterate all content in environment [#{fetch(:stage)}] and replace it with content from [#{fetch(:src_wp_docroot)}]."
@@ -25,7 +35,7 @@ namespace :cul do
         on roles(:web) do
           within fetch(:src_wp_docroot) do
             # Ensure that source WordPress is running the latest version
-            result = capture :wp, 'core', 'check-update'
+            result = capture :wp, (fetch(:multisite, false) ? "--url=#{fetch(:source_site_multisite_url)}" : ''), 'core', 'check-update'
             unless result.index('Success')
               puts 'Could not copy from source WordPress because it is not running the latest version of WordPress. Please update source before running a copy operation.'
             end
@@ -33,13 +43,12 @@ namespace :cul do
 
           within fetch(:wp_docroot) do
             # Ensure that destination WordPress is running the latest version
-            result = capture :wp, 'core', 'check-update'
+            result = capture :wp, (fetch(:multisite, false) ? "--url=#{fetch(:destination_site_multisite_url)}" : ''), 'core', 'check-update'
             unless result.index('Success')
               puts "Could not copy TO destination [#{fetch(:stage)}] WordPress because it is not running the latest version of WordPress. Please update [#{fetch(:stage)}] before running a copy operation."
             end
           end
         end
-
         on roles(:web) do
 
           db_export_tempfile_path = ''
@@ -49,7 +58,7 @@ namespace :cul do
 
             # Export source WP DB to a temporary file
             db_export_tempfile_path = Dir::Tmpname.make_tmpname '/tmp/', 'db_export_tempfile.sql'
-            execute :wp, 'db', 'export', db_export_tempfile_path
+            execute :wp, (fetch(:multisite, false) ? "--url=#{fetch(:source_site_multisite_url)}" : ''), 'db', 'export', db_export_tempfile_path
           end
 
           within fetch(:wp_docroot) do
@@ -110,9 +119,9 @@ namespace :cul do
             invoke 'cul:wp:symlink_custom_plugins_and_themes'
 
             # Make docroot readable and executable for "other" user so nginx, which runs as "nobody", can read
-            #execute :chmod, 'o+rx', fetch(:wp_docroot)
-            execute :find, fetch(:wp_docroot), '-type d -exec chmod o+rx "{}" \;'
-            execute :find, fetch(:wp_docroot), '-type f -exec chmod o+r "{}" \;'
+            # Use -L flag because we want to follow symlinks. The whole deployment relies on symlinks.
+            execute :find, '-L', File.join(fetch(:wp_docroot), 'wp-content'), '-type d -exec chmod o+rx "{}" \;'
+            execute :find, '-L', File.join(fetch(:wp_docroot), 'wp-content'), '-type f -exec chmod o+r "{}" \;'
 
             # Invoke searchreplace task to update URL
             puts "\nYou'll probably want to run the cul:wp:searchreplace command now, since it's likely that your WP URL differs between environments."
