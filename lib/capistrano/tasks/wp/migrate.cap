@@ -1,3 +1,5 @@
+require 'tempfile'
+
 namespace :cul do
   namespace :wp do
     namespace :migrate do
