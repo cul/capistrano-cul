@@ -107,6 +107,11 @@ namespace :cul do
             # Exclude Wordfence wflogs directory, if present
             rsync_params << '--exclude wflogs'
 
+            # Exclude repository directories
+            rsync_params << '--exclude .svn'
+            rsync_params << '--exclude .git'
+            rsync_params << '--exclude .hg'
+
             # Define copy src
             rsync_params << File.join(fetch(:src_wp_docroot), 'wp-content/')
 
