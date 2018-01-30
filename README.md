@@ -60,16 +60,19 @@ require 'capistrano/cul/wp'
 4. `cap {env} cul:wp:searchreplace`
 
    Runs a search and replace operation on the tables in a WordPress installation.
-5. `cap {env} cul:wp:update:core`
+5. `cap {env} cul:wp:migrate:copy_from`
+
+   Copies the WordPress installation from one environment to another (e.g. prod to dev)
+6. `cap {env} cul:wp:update:core`
 
    Updates WordPress core to the latest version.
-6. `cap {env} cul:wp:update:plugins`
+7. `cap {env} cul:wp:update:plugins`
 
    Updates non-repo-managed plugins to the latest version.
-7. `cap {env} cul:wp:update:themes`
+8. `cap {env} cul:wp:update:themes`
 
    Updates non-repo-managed themes to the latest version.
-8. `cap {env} cul:wp:update:all`
+9. `cap {env} cul:wp:update:all`
 
    Updates WordPress core, plugins, and themes (in that order) by calling update:core, update:plugins and update:themes tasks.
 

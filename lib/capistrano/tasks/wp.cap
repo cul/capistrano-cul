@@ -1,16 +1,20 @@
+CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME = 'cul-allowed-upload-types'
+CUL_ALLOWED_UPLOAD_TYPES_REPO_URL = "https://github.com/cul/#{CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME}"
+
+# Set cul_allowed_uplaod_types_version here so it can be overridden by env config
+set :cul_allowed_uplaod_types_version, 'v0.2.0'
+
 namespace :cul do
   namespace :wp do
-    before 'deploy:starting', 'cul:wp:display_maintenance_mode_message'
+    before 'deploy:starting', 'cul:wp:display_maintenance_mode_warning'
     after 'deploy:starting', 'cul:wp:enable_maintenance_mode'
+    after 'deploy:starting', 'cul:wp:update_cul_allowed_upload_types_plugin'
     after :deploy, 'cul:wp:symlink_custom_plugins_and_themes'
     after :deploy, 'cul:wp:disable_maintenance_mode'
 
     desc "Displays a message to the deploying user about how to disable maintenance mode"
-    task :display_maintenance_mode_message do
-      red_color = "\e[31m"
-      default_color = "\e[0m"
-      message = "WARNING: Starting a deployment will set WordPress to maintenance mode.  If you cancel deployment mid-way through, you'll need to manually disable maintenance mode by running: cap [env] cul:wp:disable_maintenance_mode"
-      puts red_color + message + default_color
+    task :display_maintenance_mode_warning do
+      puts maintenance_mode_message("WARNING: Starting a deployment will set WordPress to maintenance mode.  If you cancel deployment mid-way through, you'll need to manually disable maintenance mode by running: cap [env] cul:wp:disable_maintenance_mode")
     end
 
     desc "Enables maintenance mode for the WordPress site in the deploy environment"
@@ -25,6 +29,7 @@ namespace :cul do
           execute :echo, "'<?php $upgrading = #{Time.now.to_i};'", '>', path_to_maintenance_file
         end
       end
+      puts maintenance_mode_message("Maintenance mode enabled!")
     end
 
     desc "Disable maintenance mode for the WordPress site in the deploy environment"
@@ -39,6 +44,7 @@ namespace :cul do
           end
         end
       end
+      puts maintenance_mode_message("Maintenance mode disabled!")
     end
 
     desc "Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook."
@@ -116,7 +122,6 @@ namespace :cul do
         # Create symlink for wp_document_root wp-content to wp_content_path
         execute :ln, '-sf', wp_content_path, wp_docroot_wp_content_path
       end
-      update_cul_allowed_upload_types_plugin
       symlink_custom_plugins_and_themes
     end
 
@@ -158,17 +163,17 @@ namespace :cul do
 
         if test("[ -d #{wp_content_path} ]")
 
-          # Create necessary directories
+          ### Create necessary directories
           execute :mkdir, '-p', wp_content_plugin_path
           execute :mkdir, '-p', wp_content_mu_plugin_path
           execute :mkdir, '-p', wp_content_themes_path
 
-          # Remove old symlinks
+          ### Remove old symlinks
           [wp_content_plugin_path, wp_content_mu_plugin_path, wp_content_themes_path].each do |dir|
             execute :find, dir, '-maxdepth 1', '-type l', '-exec rm {} \;'
           end
 
-          # Add latest symlinks
+          ### Add latest symlinks
           fetch(:wp_custom_plugins, {}).each do |plugin, repo_relative_path|
             execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_content_plugin_path, plugin)
           end
@@ -180,13 +185,45 @@ namespace :cul do
           fetch(:wp_custom_themes, {}).each do |theme, repo_relative_path|
             execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_content_themes_path, theme)
           end
+
+          ### Also symlink to cul-allowed-upload-types plugin files
+          within deploy_path do
+            cul_allowed_upload_types_plugin_top_level_files_and_dirs = capture(:find, CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME, '-mindepth', '2', '-maxdepth', '2').split("\n")
+            # Symlink all plugin files and directories
+            cul_allowed_upload_types_plugin_top_level_files_and_dirs.each do |plugin_file_or_directory_path|
+              #puts 'Run: ' + [:ln, '-sf', File.join(deploy_path, plugin_file_or_directory_path), File.join(wp_content_mu_plugin_path, File.basename(plugin_file_or_directory_path))].join(' ')
+              execute :ln, '-sf', File.join(deploy_path, plugin_file_or_directory_path), File.join(wp_content_mu_plugin_path, File.basename(plugin_file_or_directory_path))
+            end
+          end
+
         end
       end
     end
 
-    def self.update_cul_allowed_upload_types_plugin
-      # Download plugin to "diretory-#{YYMMDDHHSS}"
-      #
+    desc "Downloads the latest version of the cul-allowed-upload-types plugin"
+    task :update_cul_allowed_upload_types_plugin do
+      # Download plugin to deploy_path
+      on roles(:web) do
+        within deploy_path do
+          # Clear out old plugin directory if it exists
+          execute :rm, '-rf', CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME
+          # Re-create plugin directory and temp dir inside of it
+          allowed_upload_types_tempdir = File.join(CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME, 'tmp')
+          execute :mkdir, '-p', allowed_upload_types_tempdir
+
+          # Download and unzip plugin
+          allowed_upload_types_temp_zipfile = File.join(allowed_upload_types_tempdir, 'plugin.zip')
+          zip_file_name = "#{fetch(:cul_allowed_uplaod_types_version)}.zip"
+          execute :curl, '-L', '--silent', '-o', allowed_upload_types_temp_zipfile, "#{CUL_ALLOWED_UPLOAD_TYPES_REPO_URL}/archive/#{zip_file_name}"
+          execute :unzip, allowed_upload_types_temp_zipfile, '-d', CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME
+
+          # Delete temp dir after unzip
+          execute :rm, '-rf', allowed_upload_types_tempdir
+
+          # Remove .gitignore file from plugin directory so we don't symlink to it later
+          execute :find, CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME, '-name', '.gitignore', '-delete'
+        end
+      end
     end
 
     desc "Runs a search and replace operation on the tables in a WordPress installation"
@@ -221,11 +258,17 @@ namespace :cul do
     end
 
     def self.cul_allowed_upload_types_plugin_path
-      File.join('mu-plugins', 'cul-allowed-upload-types')
+      File.join('mu-plugins', CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME)
     end
 
     def self.maintenance_file_path
       File.join(fetch(:wp_docroot), '.maintenance')
+    end
+
+    def self.maintenance_mode_message(message)
+      text_color = "\e[35m"
+      default_color = "\e[0m"
+      text_color + message + default_color
     end
 
   end

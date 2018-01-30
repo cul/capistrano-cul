@@ -1,4 +1,5 @@
 require 'tempfile'
+require 'json'
 
 namespace :cul do
   namespace :wp do
@@ -6,6 +7,8 @@ namespace :cul do
 
       desc "Copies the WordPress installation from one environment to another (e.g. prod to dev)"
       task :copy_from do
+        # Need to store path as local variable so it can be referenced in `on roles(:web) do` portion of script
+        path_to_allowed_upload_types_plugin = cul_allowed_upload_types_plugin_path
 
         require_cap_params!([:wp_docroot, :wp_content_path])
 
@@ -32,6 +35,9 @@ namespace :cul do
           puts 'Copy operation has been cancelled because neither "y" nor "yes" were entered.'
           next
         end
+
+        # Enter maintenance mode
+        invoke 'cul:wp:enable_maintenance_mode'
 
         # Check WP version on source and destination WordPress instances
         on roles(:web) do
@@ -89,6 +95,18 @@ namespace :cul do
               '--specials',
               '--copy-links'
             ]
+
+            # We're going to be copying wp-content in two parts
+            # 1. Everything else under wp-content EXCEPT uploads, blogs.dir,
+            # plugins, themes, mu-plugins
+
+            # 2. Everything under uploads AND wpblogs.dir with
+            # cul-allowed-upload-types file extension filter applied
+
+            # TODO: Generate file list
+            # Include only allowed extensions
+            #allowed_upload_file_extensions = JSON.parse(capture(:wp, 'eval', '"echo cul_allowed_upload_file_extensions_as_json();"'))
+
             # Exclude all repo-managed plugins, mu_plugins and themes
             fetch(:wp_custom_plugins, {}).each do |plugin, repo_relative_path|
               rsync_params << "--exclude plugins/#{plugin}"
@@ -96,10 +114,12 @@ namespace :cul do
             fetch(:wp_custom_mu_plugins, {}).each do |mu_plugin, repo_relative_path|
               rsync_params << "--exclude mu-plugins/#{mu_plugin}"
             end
-
             fetch(:wp_custom_themes, {}).each do |theme, repo_relative_path|
               rsync_params << "--exclude themes/#{theme}"
             end
+
+            # Exclude cul-allowed-upload-types plugin
+            rsync_params << '--exclude ' + path_to_allowed_upload_types_plugin
 
             # Exclude .nfs* lock files
             rsync_params << '--exclude .nfs*'
@@ -146,6 +166,8 @@ namespace :cul do
         end
 
       end
+
+      after 'cul:wp:migrate:copy_from', 'cul:wp:disable_maintenance_mode'
 
     end
   end
