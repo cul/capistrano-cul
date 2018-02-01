@@ -14,7 +14,7 @@ namespace :cul do
 
     desc "Displays a message to the deploying user about how to disable maintenance mode"
     task :display_maintenance_mode_warning do
-      puts maintenance_mode_message("WARNING: Starting a deployment will set WordPress to maintenance mode.  If you cancel deployment mid-way through, you'll need to manually disable maintenance mode by running: cap [env] cul:wp:disable_maintenance_mode")
+      puts color_text("WARNING: Starting a deployment will set WordPress to maintenance mode.  If you cancel deployment mid-way through, you'll need to manually disable maintenance mode by running: cap [env] cul:wp:disable_maintenance_mode")
     end
 
     desc "Enables maintenance mode for the WordPress site in the deploy environment"
@@ -29,7 +29,7 @@ namespace :cul do
           execute :echo, "'<?php $upgrading = #{Time.now.to_i};'", '>', path_to_maintenance_file
         end
       end
-      puts maintenance_mode_message("Maintenance mode enabled!")
+      puts color_text("Maintenance mode enabled!")
     end
 
     desc "Disable maintenance mode for the WordPress site in the deploy environment"
@@ -44,7 +44,7 @@ namespace :cul do
           end
         end
       end
-      puts maintenance_mode_message("Maintenance mode disabled!")
+      puts color_text("Maintenance mode disabled!")
     end
 
     desc "Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook."
@@ -265,8 +265,8 @@ namespace :cul do
       File.join(fetch(:wp_docroot), '.maintenance')
     end
 
-    def self.maintenance_mode_message(message)
-      text_color = "\e[35m"
+    def self.color_text(message, color_number=35)
+      text_color = "\e[#{color_number}m"
       default_color = "\e[0m"
       text_color + message + default_color
     end
