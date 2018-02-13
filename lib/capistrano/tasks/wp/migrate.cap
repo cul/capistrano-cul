@@ -22,10 +22,8 @@ namespace :cul do
           fetch(:destination_site_multisite_url)
         end
 
-        # TODO: Verify that destination wordpress has already had the setup and deploy tasks run for it
+        # TODO: Would be nice to verify that destination wordpress has already had the setup and deploy tasks run for it
         set :src_wp_docroot, ask("server path to source WordPress installation (to copy from)")
-        #set :src_wp_docroot, '/cul/cul0/lito/vmounts/haydn/var-www/kennedyprize/html'
-        #set :src_wp_docroot, '/cul/cul0/ldpd/culblogs/prod/ssl-html'
 
         # Confirm operation because it is destructive
         puts "\nWARNING: This operation will obliterate all content in environment [#{fetch(:stage)}] and replace it with content from [#{fetch(:src_wp_docroot)}]."
@@ -69,14 +67,14 @@ namespace :cul do
               # EXCLUDE plugins, themes, mu-plugins, uploads, and blogs.dir
               "-not \\( -path './plugins/*' -o -path './mu-plugins/*' -o -path './themes/*' -o -path './uploads/*' -o -path './blogs.dir/*' \\) " +
               # EXCLUDE certain unwanted files and paths
-              "-a -not \\( -name '.nfs*' \\) " +
+              "-a -not \\( -name '.nfs*' -o -name 'config.tmp.*' \\) " +
               "-a -not \\( -path '*/.git*' -o -path '*/.svn*' -o -path '*/.hg*' \\) "
 
             find_upload_dirs = '. -type f ' +
               # INCLUDE ONLY uploads and blogs.dir
               "\\( -path './uploads/*' -o -path './blogs.dir/*' \\) " +
               # EXCLUDE certain unwanted files and paths
-              "-a -not \\( -name '.nfs*' \\) " +
+              "-a -not \\( -name '.nfs*' -o -name 'config.tmp.*' \\) " +
               "-a -not \\( -path '*/.git*' -o -path '*/.svn*' -o -path '*/.hg*' \\) " +
               # INCLUDE ONLY certain file extensions
               "-a \\( " + JSON.parse(capture(:wp, (fetch(:multisite, false) ? "--url=#{fetch(:source_site_multisite_url)}" : ''), 'eval', '"echo cul_allowed_upload_file_extensions_as_json();"')).map{ |allowed_file_extension|
@@ -127,6 +125,9 @@ namespace :cul do
           puts 'Copying wp-content. This may take a while for sites with a lot of uploads...'
 
           execute :rsync, *rsync_params
+
+          # clean up path_to_list_of_files_to_copy file
+          execute :rm, path_to_list_of_files_to_copy
 
           # Next, create symlinks to repo-managed plugins and themes, which will also recreate plugins, mu-plugins, and themes directories
 

@@ -2,7 +2,7 @@ CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME = 'cul-allowed-upload-types'
 CUL_ALLOWED_UPLOAD_TYPES_REPO_URL = "https://github.com/cul/#{CUL_ALLOWED_UPLOAD_TYPES_PLUGIN_NAME}"
 
 # Set cul_allowed_uplaod_types_version here so it can be overridden by env config
-set :cul_allowed_uplaod_types_version, 'v0.2.0'
+set :cul_allowed_uplaod_types_version, 'v0.5.0'
 
 namespace :cul do
   namespace :wp do
