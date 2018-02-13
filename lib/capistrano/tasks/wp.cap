@@ -244,8 +244,8 @@ namespace :cul do
           start_time = Time.now
 
           if fetch(:multisite, false)
-            puts "Since this is a multisite, you'll need to specify the source multisite url to continue:"
-            set :multisite_url, ask('full multisite install url (e.g. https://blogs.cul.columbia.edu)')
+            puts "Since this is a multisite, you'll need to specify the source multisite instance domain to continue:"
+            set :multisite_url, ask('source multisite instance domain (e.g. blogs.cul.columbia.edu)')
 
             execute :wp, "--url=#{fetch(:multisite_url)}", 'search-replace', "'#{fetch(:search_string)}'", "'#{fetch(:replacement_string)}'", '--all-tables', '--skip-columns=guid'
           else

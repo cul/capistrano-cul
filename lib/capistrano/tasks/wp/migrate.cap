@@ -13,12 +13,12 @@ namespace :cul do
         require_cap_params!([:wp_docroot, :wp_content_path])
 
         if fetch(:multisite, false)
-          puts "Since this is a multisite, you'll need to specify the source instance multisite url to continue:"
-          set :source_site_multisite_url, ask('source multisite full install url (e.g. https://blogs.cul.columbia.edu)')
+          puts "Since this is a multisite, you'll need to specify the source multisite instance domain to continue:"
+          set :source_site_multisite_url, ask('source multisite instance domain (e.g. blogs.cul.columbia.edu)')
           fetch(:source_site_multisite_url)
 
-          puts "And you'll also need to specify the destination instance multisite url to continue:"
-          set :destination_site_multisite_url, ask('destination multisite full install url (e.g. https://blogs-dev.cul.columbia.edu)')
+          puts "And you'll also need to specify the destination multisite instance domain to continue:"
+          set :destination_site_multisite_url, ask('destination multisite instance domain (e.g. blogs-dev.cul.columbia.edu)')
           fetch(:destination_site_multisite_url)
         end
 
