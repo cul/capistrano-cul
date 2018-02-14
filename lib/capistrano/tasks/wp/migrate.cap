@@ -67,14 +67,14 @@ namespace :cul do
               # EXCLUDE plugins, themes, mu-plugins, uploads, and blogs.dir
               "-not \\( -path './plugins/*' -o -path './mu-plugins/*' -o -path './themes/*' -o -path './uploads/*' -o -path './blogs.dir/*' \\) " +
               # EXCLUDE certain unwanted files and paths
-              "-a -not \\( -name '.nfs*' -o -name 'config.tmp.*' \\) " +
+              "-a -not \\( -name '.nfs*' -o -name '*.tmp.*' \\) " +
               "-a -not \\( -path '*/.git*' -o -path '*/.svn*' -o -path '*/.hg*' \\) "
 
             find_upload_dirs = '. -type f ' +
               # INCLUDE ONLY uploads and blogs.dir
               "\\( -path './uploads/*' -o -path './blogs.dir/*' \\) " +
               # EXCLUDE certain unwanted files and paths
-              "-a -not \\( -name '.nfs*' -o -name 'config.tmp.*' \\) " +
+              "-a -not \\( -name '.nfs*' -o -name '*.tmp.*' \\) " +
               "-a -not \\( -path '*/.git*' -o -path '*/.svn*' -o -path '*/.hg*' \\) " +
               # INCLUDE ONLY certain file extensions
               "-a \\( " + JSON.parse(capture(:wp, (fetch(:multisite, false) ? "--url=#{fetch(:source_site_multisite_url)}" : ''), 'eval', '"echo cul_allowed_upload_file_extensions_as_json();"')).map{ |allowed_file_extension|
@@ -123,6 +123,9 @@ namespace :cul do
           rsync_params << fetch(:wp_content_path) + '/'
 
           puts 'Copying wp-content. This may take a while for sites with a lot of uploads...'
+
+          puts 'rsync args:'
+          puts rsync_params.join(' ')
 
           execute :rsync, *rsync_params
 

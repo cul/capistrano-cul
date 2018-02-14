@@ -77,8 +77,6 @@ namespace :cul do
 
         wp_content_path = fetch(:wp_content_path)
 
-        invoke 'deploy' # Deploy before doing setup
-
         # Create nginx logs directory if it doesn't already exist
         execute :mkdir, '-p', deploy_path.join('logs')
 
@@ -87,6 +85,8 @@ namespace :cul do
 
         # Make full path to wp_content_path if not exist
         execute :mkdir, '-p', wp_content_path
+
+        invoke 'deploy' # Deploy before doing setup
 
         # If wp_docroot/wp-includes does not exist, do wordpress download
         unless test("[ -d #{File.join(fetch(:wp_docroot), 'wp-includes')} ]")
