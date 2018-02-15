@@ -34,10 +34,11 @@ namespace :cul do
           next
         end
 
+        # Don't really care about maintenance mode because we're completely destroying the target environment
         # Enter maintenance mode
-        invoke 'cul:wp:enable_maintenance_mode'
+        #invoke 'cul:wp:enable_maintenance_mode'
 
-        # Check WP version on source and destination WordPress instances
+        # Check WP version on source WordPress instance
         failure = false
         on roles(:web) do
           within fetch(:src_wp_docroot) do
@@ -51,6 +52,15 @@ namespace :cul do
         end
         next if failure # End if the previous checks failed
 
+        on roles(:web) do
+          # Destroy current wp_docroot
+          execute :rm, '-rf', fetch(:wp_docroot)
+          execute :mkdir, fetch(:wp_docroot)
+        end
+
+        # Download new copy of wordpress
+        invoke 'cul:wp:setup'
+
         path_to_list_of_files_to_copy = ''
 
         on roles(:web) do
@@ -61,6 +71,9 @@ namespace :cul do
             # plugins, themes, mu-plugins
             # 2. Everything under uploads AND wpblogs.dir with
             # cul-allowed-upload-types file extension filter applied
+
+            # Make sure find command handles non-ASCII chars
+            #execute 'LC_ALL=en_US.iso885915'
 
             # Generate two find commands for the above searches
             find_non_upload_dirs = '. -type f ' +
@@ -117,8 +130,13 @@ namespace :cul do
 
           # we're only copying files from the given file list
           rsync_params << "--files-from=#{path_to_list_of_files_to_copy}"
+
+          src_wp_content_dir = File.join(fetch(:src_wp_docroot), 'wp-content/')
+          # Run a find operation on the wp-content dir to pre-cache all non-UTF compliant files prior to our rsync operation (to handle files with smart quotes, em dashes, foreign characters, etc.)
+          execute :find, src_wp_content_dir, '-print0', '|', 'perl', '-n0e', '\'chomp; print $_, "\n" if /[[:^ascii:][:cntrl:]]/\''
+
           # src directory (--files-from values are relative to this src directory)
-          rsync_params << File.join(fetch(:src_wp_docroot), 'wp-content/')
+          rsync_params << src_wp_content_dir
           # dest directory
           rsync_params << fetch(:wp_content_path) + '/'
 
@@ -136,7 +154,7 @@ namespace :cul do
 
           within fetch(:wp_docroot) do
             # Regenerate symlinks
-            invoke 'cul:wp:symlink_custom_plugins_and_themes'
+            invoke! 'cul:wp:symlink_custom_plugins_and_themes'
           end
 
           # Now it's time to copy the database
@@ -239,7 +257,7 @@ namespace :cul do
         end
       end
 
-      after 'cul:wp:migrate:copy_from', 'cul:wp:disable_maintenance_mode'
+      #after 'cul:wp:migrate:copy_from', 'cul:wp:disable_maintenance_mode'
 
     end
   end
