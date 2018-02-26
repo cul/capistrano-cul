@@ -1,0 +1,88 @@
+namespace :cul do
+  namespace :wp do
+    namespace :deploy do
+
+      before 'deploy:starting', 'cul:wp:deploy:display_maintenance_mode_warning'
+      before 'deploy:starting', 'cul:wp:deploy:require_deploy_cap_variables'
+      after 'deploy:starting', 'cul:wp:enable_maintenance_mode'
+
+      after :deploy, 'cul:wp:deploy:download_cul_allowed_upload_types_plugin'
+      after :deploy, 'cul:wp:deploy:symlink_custom_plugins_and_themes'
+      after :deploy, 'cul:wp:disable_maintenance_mode'
+
+      desc "Verifies that all deployed-related cap variables have been set in the application's deploy config."
+      task :require_deploy_cap_variables do
+        require_cap_variables!([:branch, :wp_docroot, :multisite])
+      end
+
+      desc "Displays a message to the deploying user about how to disable maintenance mode"
+      task :display_maintenance_mode_warning do
+        puts color_text("WARNING: Starting a deployment will set WordPress to maintenance mode.  If you cancel deployment mid-way through, you'll need to manually disable maintenance mode by running: cap [env] cul:wp:disable_maintenance_mode")
+      end
+
+      desc "Downloads the cul-allowed-upload-types plugin from its remote web location"
+      task :download_cul_allowed_upload_types_plugin do
+        on roles(:web) do
+          within(current_path) do
+            zip_file_name = "#{fetch(:cul_allowed_upload_types_version)}.zip"
+            execute :curl, '-L', '--silent', '-o', zip_file_name, "https://github.com/cul/#{fetch(:cul_allowed_upload_types_plugin_name)}/archive/#{zip_file_name}"
+            execute :unzip, zip_file_name
+            execute :rm, zip_file_name # clean up zip file
+
+            # rename plugin directory so that it's just called
+            # "#{fetch(:cul_allowed_upload_types_plugin_name)}",
+            # so we can easily reference it later in our symlinking step,
+            # regardless of version number
+            versioned_plugin_directory_name = capture :find, '.', '-mindepth', '1', '-maxdepth', '1', '-name', "#{fetch(:cul_allowed_upload_types_plugin_name)}*"
+            execute :mv, versioned_plugin_directory_name, fetch(:cul_allowed_upload_types_downloaded_plugin_path)
+          end
+        end
+      end
+
+      desc "Downloads the cul-allowed-upload-types plugin from its remote web location"
+      task :symlink_custom_plugins_and_themes do
+        on roles(:web) do
+          wp_content_path = File.join(fetch(:wp_docroot), 'wp-content')
+          wp_content_plugin_path = File.join(wp_content_path, 'plugins')
+          wp_content_mu_plugin_path = File.join(wp_content_path, 'mu-plugins')
+          wp_content_themes_path = File.join(wp_content_path, 'themes')
+
+          ### Create necessary directories
+          execute :mkdir, '-p', wp_content_plugin_path, wp_content_mu_plugin_path, wp_content_themes_path
+
+          ### Remove old symlinks in each directory
+          [wp_content_plugin_path, wp_content_mu_plugin_path, wp_content_themes_path].each do |dir|
+            execute :find, dir, '-maxdepth 1', '-type l', '-exec rm {} \;'
+          end
+
+          ### Add symlinks for custom plugins
+          fetch(:wp_custom_plugins, {}).each do |plugin, repo_relative_path|
+            execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_content_plugin_path, plugin)
+          end
+
+          ### Add symlinks for custom mu-plugins
+          fetch(:wp_custom_mu_plugins, {}).each do |mu_plugin, repo_relative_path|
+            execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_content_mu_plugin_path, mu_plugin)
+          end
+
+          ### Add symlinks for custom themes
+          fetch(:wp_custom_themes, {}).each do |theme, repo_relative_path|
+            execute :ln, '-sf', File.join(current_path, repo_relative_path), File.join(wp_content_themes_path, theme)
+          end
+
+          ### Add symlinks for all files and directories directly under the cul-allowed-upload-types plugin directory.
+          # The symlinks will be created directly under the wordpress instance mu-plugins directory.
+          within deploy_path do
+            cul_allowed_upload_types_plugin_top_level_files_and_dirs = capture(:find, fetch(:cul_allowed_upload_types_downloaded_plugin_path), '-mindepth', '1', '-maxdepth', '1').split("\n")
+            cul_allowed_upload_types_plugin_top_level_files_and_dirs.each do |plugin_file_or_directory_path|
+              plugin_file_or_directory_name = File.basename(plugin_file_or_directory_path)
+              next if plugin_file_or_directory_name == '.gitignore' # we don't want to symlink the .gitignore file from the plugin's repo
+              execute :ln, '-sf', plugin_file_or_directory_path, File.join(wp_content_mu_plugin_path, plugin_file_or_directory_name)
+            end
+          end
+        end
+      end
+
+    end
+  end
+end

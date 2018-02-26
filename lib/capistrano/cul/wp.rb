@@ -1,3 +1,6 @@
 load File.expand_path('../../tasks/wp.cap', __FILE__)
+load File.expand_path('../../tasks/wp/deploy.cap', __FILE__)
+load File.expand_path('../../tasks/wp/setup.cap', __FILE__)
+load File.expand_path('../../tasks/wp/install.cap', __FILE__)
 load File.expand_path('../../tasks/wp/update.cap', __FILE__)
 load File.expand_path('../../tasks/wp/migrate.cap', __FILE__)

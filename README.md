@@ -93,7 +93,6 @@ Here's a sample configuration:
 
 ```ruby
 set :wp_docroot, "#{fetch(:deploy_to)}/wp-docroot"
-set :wp_content_path, "#{fetch(:deploy_to)}/wp-content"
 set :multisite, false
 set :title, 'Amazing WordPress Site'
 

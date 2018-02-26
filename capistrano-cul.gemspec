@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency 'capistrano', '~> 3.1'
+  spec.add_dependency 'capistrano-git-with-submodules', '~> 2.0'
 
   spec.add_development_dependency "bundler", "~> 1.15"
 end

@@ -25,4 +25,28 @@ namespace :cul do
       execute :mv, tmp_current_path, current_path.parent
     end
   end
+
+  # Throws an error if any of the given variables are nil or blank, potentially prompting
+  # the user for a value if a variable was configured to be set by the ask() method.
+  def self.require_cap_variables!(variables)
+    variables.each do |variable|
+      value = fetch(variable) # fetch the variable, potentially prompting the use to enter a value on the command line
+      next if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+      raise Capistrano::ValidationError, "Missing required variable #{variable}" if value.nil? || value.empty?
+    end
+  end
+
+  def self.enter_y_to_continue(prompt)
+    puts prompt
+    set :confirmation_value, ask('"y" or "yes" to continue (or any other value to cancel)')
+    entered_y = ['y', 'yes'].include?(fetch(:confirmation_value))
+    delete :confirmation_value
+    entered_y
+  end
+
+  def self.color_text(message, color_number=35)
+    text_color = "\e[#{color_number}m"
+    default_color = "\e[0m"
+    text_color + message + default_color
+  end
 end

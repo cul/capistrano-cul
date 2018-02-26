@@ -1,0 +1,35 @@
+namespace :cul do
+  namespace :wp do
+
+    desc "Runs a WordPress installation for a newly set up instance and creates a new admin user"
+    task :install do
+      unless enter_y_to_continue(color_text("This will drop any existing database for #{fetch(:stage)}."))
+        puts 'Operation cancelled because "y" was not entered.'
+        next
+      end
+
+      puts "Please provide administrative user credentials for this new WP instance:"
+      ask(:admin_user, "Admin username:")
+      ask(:admin_password, "Admin password:", echo: false)
+      ask(:admin_email, "Admin email:")
+
+      require_cap_variables!([:url, :title, :admin_user, :admin_password, :admin_email])
+
+      on roles(:web) do
+        within fetch(:wp_docroot) do
+
+          # Drop existing database
+          execute :wp, 'db', 'reset', '--yes'
+
+          execute :wp, 'core', fetch(:multisite) ? 'multisite-install' : 'install',
+            "--url='#{fetch(:url)}'",
+            "--title='#{fetch(:title)}'",
+            "--admin_user='#{fetch(:admin_user)}'",
+            "--admin_password='#{fetch(:admin_password)}'",
+            "--admin_email='#{fetch(:admin_email)}'"
+        end
+      end
+    end
+
+  end
+end
