@@ -7,7 +7,7 @@ namespace :cul do
       after 'deploy:starting', 'cul:wp:enable_maintenance_mode'
 
       after :deploy, 'cul:wp:deploy:download_cul_allowed_upload_types_plugin'
-      after :deploy, 'cul:wp:deploy:symlink_custom_plugins_and_themes'
+      after :deploy, 'cul:wp:deploy:create_symlinks'
       after :deploy, 'cul:wp:disable_maintenance_mode'
 
       desc "Verifies that all deployed-related cap variables have been set in the application's deploy config."
@@ -39,8 +39,8 @@ namespace :cul do
         end
       end
 
-      desc "Downloads the cul-allowed-upload-types plugin from its remote web location"
-      task :symlink_custom_plugins_and_themes do
+      desc "Creates all necessary symlinks for a WP deployment"
+      task :create_symlinks do
         on roles(:web) do
           wp_content_path = File.join(fetch(:wp_docroot), 'wp-content')
           wp_content_plugin_path = File.join(wp_content_path, 'plugins')
@@ -50,7 +50,7 @@ namespace :cul do
           ### Create necessary directories
           execute :mkdir, '-p', wp_content_plugin_path, wp_content_mu_plugin_path, wp_content_themes_path
 
-          ### Remove old symlinks in each directory
+          ### Remove old symlinks in plugin and theme directories
           [wp_content_plugin_path, wp_content_mu_plugin_path, wp_content_themes_path].each do |dir|
             execute :find, dir, '-maxdepth 1', '-type l', '-exec rm {} \;'
           end
@@ -80,6 +80,12 @@ namespace :cul do
               execute :ln, '-sf', plugin_file_or_directory_path, File.join(wp_content_mu_plugin_path, plugin_file_or_directory_name)
             end
           end
+
+          ### Add robots.txt symlink if robots.txt file exists in shared directory
+          if test "[ -f #{shared_path.join('robots.txt')} ]"
+            execute :ln, '-sf', shared_path.join('robots.txt'), File.join(fetch(:wp_docroot), 'robots.txt')
+          end
+
         end
       end
 

@@ -54,7 +54,7 @@ require 'capistrano/cul/wp'
 2. `cap {env} cul:wp:install`
 
    Runs a WordPress installation for a newly set up instance and creates a new admin user.
-3. `cap {env} cul:wp:symlink_custom_plugins_and_themes`
+3. `cap {env} cul:wp:create_symlinks`
 
    Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook.
 4. `cap {env} cul:wp:searchreplace`
