@@ -103,6 +103,10 @@ set :wp_custom_plugins, {
 set :wp_custom_themes, {
   'mytheme' => 'themes/mytheme'
 }
+set :wp_content_rsync_exclude_filters, [
+  "uploads/2018/01/ignore_this_file.jpg",
+  "uploads/2018/02/also_ignore_this_file.jpg",
+]
 ```
 
 ## Development
