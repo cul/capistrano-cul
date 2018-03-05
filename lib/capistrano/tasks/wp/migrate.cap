@@ -128,7 +128,8 @@ namespace :cul do
                 '--include="/blogs.dir**/"',
               ] +
               # Apply inclusion filters based on file extension
-              allowed_file_extensions.map{ |allowed_file_extension| "--include=\"*.#{allowed_file_extension}\"" } +
+              # Generating case-insensitive rsync extension inclusion filters by doing this: --include="*.[Cc][Ss][Vv]"
+              allowed_file_extensions.map{ |allowed_file_extension| "--include=\"*.[#{allowed_file_extension.split(//).map{|char| char.upcase + char.downcase }.join('][')}]\"" } +
               [
                 # Exclude everything else not included by --include filters
                 '--exclude="*"',
