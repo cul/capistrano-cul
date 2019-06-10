@@ -5,7 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 Gem::Specification.new do |spec|
   spec.name          = "capistrano-cul"
   spec.version       = IO.read("VERSION").strip
-  spec.authors       = ["Carla Galarza", "Columbia University Libraries"]
+  spec.authors       = ["Carla Galarza", "Eric O'Hanlon", "Columbia University Libraries"]
   spec.email         = ["cmg2228@columbia.edu"]
 
   spec.summary       = "Common capistrano tasks shared across projects at CUL"
@@ -21,6 +21,11 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'capistrano', '~> 3.1'
   spec.add_dependency 'capistrano-git-with-submodules', '~> 2.0'
+
+  # For supporting newer OpenSSH keys (for capistrano deployments)
+  spec.add_dependency 'ed25519', '>= 1.2.4'
+  spec.add_dependency 'bcrypt_pbkdf', '>= 1.0.1'
+
 
   spec.add_development_dependency "bundler", "~> 1.15"
 end
