@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'capistrano-git-with-submodules', '~> 2.0'
 
   # For supporting newer OpenSSH keys (for capistrano deployments)
+  spec.add_dependency 'net-ssh', '>= 5'
   spec.add_dependency 'ed25519', '>= 1.2.4'
   spec.add_dependency 'bcrypt_pbkdf', '>= 1.0.1'
 
