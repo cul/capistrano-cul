@@ -7,6 +7,7 @@ namespace :cul do
       after 'deploy:starting', 'cul:wp:enable_maintenance_mode'
 
       after :deploy, 'cul:wp:deploy:download_cul_allowed_upload_types_plugin'
+      after :deploy, 'cul:wp:deploy:install_additional_plugins_from_remote_zip'
       after :deploy, 'cul:wp:deploy:create_symlinks'
       after :deploy, 'cul:wp:disable_maintenance_mode'
 
@@ -35,6 +36,20 @@ namespace :cul do
             # regardless of version number
             versioned_plugin_directory_name = capture :find, '.', '-mindepth', '1', '-maxdepth', '1', '-name', "#{fetch(:cul_allowed_upload_types_plugin_name)}*"
             execute :mv, versioned_plugin_directory_name, fetch(:cul_allowed_upload_types_downloaded_plugin_path)
+          end
+        end
+      end
+
+      desc "Installs remote http/https-location zip file plugins specified in the :additional_plugins_from_remote_zip variable"
+      task :install_additional_plugins_from_remote_zip do
+        on roles(:web) do
+          within File.join(fetch(:wp_docroot)) do
+            plugin_zip_urls = fetch(:additional_plugins_from_remote_zip) || []
+            # Make sure that all of the URLs start with http:// or https://
+            raise 'Found non-http/https url in :additional_plugins_from_remote_zip' if plugin_zip_urls.detect { |val| val !~ /^https?:\/\// }
+            plugin_zip_urls.each do |plugin_url|
+              execute :wp, (fetch(:multisite, false) ? "--url=#{fetch(:dest_multisite_domain)}" : ''), 'plugin', 'install', plugin_url, '--force'
+            end
           end
         end
       end

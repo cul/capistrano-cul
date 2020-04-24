@@ -51,27 +51,35 @@ require 'capistrano/cul/wp'
 1. `cap {env} cul:wp:setup`
 
    Sets up a WordPress docroot and runs deployment; does not install WordPress and does not create any users.
+
 2. `cap {env} cul:wp:install`
 
    Runs a WordPress installation for a newly set up instance and creates a new admin user.
+
 3. `cap {env} cul:wp:create_symlinks`
 
    Creates symlinks for custom plugins and themes as part of a WordPress deployment. Generally run as an `after :deploy` hook.
+
 4. `cap {env} cul:wp:searchreplace`
 
    Runs a search and replace operation on the tables in a WordPress installation.
+
 5. `cap {env} cul:wp:migrate:copy_from`
 
    Copies the WordPress installation from one environment to another (e.g. prod to dev)
+
 6. `cap {env} cul:wp:update:core`
 
    Updates WordPress core to the latest version.
+
 7. `cap {env} cul:wp:update:plugins`
 
    Updates non-repo-managed plugins to the latest version.
+
 8. `cap {env} cul:wp:update:themes`
 
    Updates non-repo-managed themes to the latest version.
+
 9. `cap {env} cul:wp:update:all`
 
    Updates WordPress core, plugins, and themes (in that order) by calling update:core, update:plugins and update:themes tasks.
@@ -100,6 +108,11 @@ set :wp_custom_plugins, {
   'custom-plugin-file.php' => 'plugins/custom-plugin-file.php',
   'custom-plugin-directory' => 'plugins/custom-plugin-directory'
 }
+
+set :additional_plugins_from_remote_zip, [
+   'https://github.com/cul/cf-byline/archive/v1.0.0.zip'
+]
+
 set :wp_custom_themes, {
   'mytheme' => 'themes/mytheme'
 }
