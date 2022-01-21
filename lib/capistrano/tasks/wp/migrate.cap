@@ -171,7 +171,7 @@ namespace :cul do
       desc "Copies certain wp-content (everything other than plugins, themes, and mu-plugins) from one environment to another (e.g. prod to dev). This task is part of the :copy_from task and isn't meant to be called directly."
       task :copy_database do
         remote_server_db_export_tempfile_path = Tempfile.create(['db_export_tempfile', '.sql'], '/tmp/').path
-        local_server_db_export_file_path = File.join(fetch(:wp_docroot), File.basename(remote_server_db_export_tempfile_path.path))
+        local_server_db_export_file_path = File.join(fetch(:wp_docroot), File.basename(remote_server_db_export_tempfile_path))
 
         # Export database from source WordPress instance
         on fetch(:remote_user) + '@' + fetch(:src_wp_server) do
