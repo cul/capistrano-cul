@@ -120,6 +120,11 @@ set :wp_content_rsync_exclude_filters, [
   "uploads/2018/01/ignore_this_file.jpg",
   "uploads/2018/02/also_ignore_this_file.jpg",
 ]
+
+# For this example site, we're symlinking the wp-content/wflogs directory to a corresponding
+# location under /var.  We think that WordFence may be locking up occasionally when wflogs
+# is on an NFS mount, and our /var mount is local disk.  It seems to help.
+before 'cul:wp:deploy:create_symlinks', 'cul:wp:deploy:symlink_wflogs_to_var_directory'
 ```
 
 ## Development

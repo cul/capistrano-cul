@@ -104,6 +104,29 @@ namespace :cul do
         end
       end
 
+      desc 'Symlink the wp-content wflogs directory to a corresponding directory in /var'
+      task :symlink_wflogs_to_var_directory do
+        opt_wflogs_path = File.join(fetch(:wp_docroot), 'wp-content', 'wflogs')
+        var_wflogs_path = opt_wflogs_path.sub(/^\/opt/, '/var')
+
+        on roles(:web) do
+          # Create target var wflogs dir if it doesn't exist
+          execute :mkdir, '-p', var_wflogs_path
+
+          # Check if a file or directory already exists at opt wflogs
+          if test "[ -e #{opt_wflogs_path} ]"
+            if test "[ -L #{opt_wflogs_path} ]"
+              # If it's a symlink, delete it and re-create it
+              execute :rm, opt_wflogs_path,
+                '&&', 'ln', '-s', var_wflogs_path, opt_wflogs_path
+            else
+              # If it's NOT a symlink, move it and symlink to the var wflogs dir
+              execute :mv, opt_wflogs_path, "#{opt_wflogs_path}-#{Time.now.strftime("%Y-%m-%d-%H%M")}",
+                '&&', 'ln', '-s', var_wflogs_path, opt_wflogs_path
+            end
+          end
+        end
+      end
     end
   end
 end
