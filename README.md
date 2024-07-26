@@ -109,9 +109,11 @@ set :wp_custom_plugins, {
   'custom-plugin-directory' => 'plugins/custom-plugin-directory'
 }
 
-set :additional_plugins_from_remote_zip, [
-   'https://github.com/cul/cf-byline/archive/v1.0.0.zip'
-]
+# NOTE: It is important that the keys in the hash below match the plugin name
+# keys exactly. The zip file url can be any valid, publicly-accessible url.
+set :additional_plugins_from_remote_zip, {
+   'cf-byline' => 'https://github.com/cul/cf-byline/archive/v1.0.0.zip'
+}
 
 set :wp_custom_themes, {
   'mytheme' => 'themes/mytheme'

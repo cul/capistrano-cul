@@ -44,10 +44,10 @@ namespace :cul do
       task :install_additional_plugins_from_remote_zip do
         on roles(:web) do
           within File.join(fetch(:wp_docroot)) do
-            plugin_zip_urls = fetch(:additional_plugins_from_remote_zip) || []
+            plugin_zip_names_and_urls = fetch(:additional_plugins_from_remote_zip) || {}
             # Make sure that all of the URLs start with http:// or https://
-            raise 'Found non-http/https url in :additional_plugins_from_remote_zip' if plugin_zip_urls.detect { |val| val !~ /^https?:\/\// }
-            plugin_zip_urls.each do |plugin_url|
+            raise 'Found non-http/https url in :additional_plugins_from_remote_zip' if plugin_zip_names_and_urls.values.detect { |val| val !~ /^https?:\/\// }
+            plugin_zip_names_and_urls.each do |plugin_name, plugin_url|
               execute :wp, (fetch(:multisite, false) ? "--url=#{fetch(:dest_multisite_domain)}" : ''), 'plugin', 'install', plugin_url, '--force'
             end
           end
