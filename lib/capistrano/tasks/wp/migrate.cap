@@ -104,7 +104,10 @@ namespace :cul do
                 '--exclude="mu-plugins"',
                 '--exclude="themes"',
                 '--exclude="uploads"',
-                '--exclude="blogs.dir"'
+                '--exclude="blogs.dir"',
+                # We don't want to copy wflogs because we will be symlinking the
+                # dir on the other side, and Wordfence will recreate it anyway.
+                '--exclude="wflogs"'
               ] +
               # Apply user-defined exclusion filters, if present
               fetch(:wp_content_rsync_exclude_filters, []).map{ |filter_value| "--exclude=\"#{filter_value}\"" } +
@@ -149,8 +152,8 @@ namespace :cul do
         on roles(:web) do
           within dest_wp_content_path do
             files_not_copied = capture(:comm, '-23',
-              "<(ssh #{fetch(:remote_user)}@#{fetch(:src_wp_server)} \"cd #{src_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\) | sort\")",
-              "<(cd #{dest_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\) | sort)"
+              "<(ssh #{fetch(:remote_user)}@#{fetch(:src_wp_server)} \"cd #{src_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\) | LC_ALL=C sort\")",
+              "<(cd #{dest_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\) | LC_ALL=C sort)"
             )
 
             # Generate list of files that weren't copied. Display this list to the user.
@@ -258,7 +261,14 @@ namespace :cul do
 
             puts "Downloading new copies of non-repo-managed plugins and themes..."
 
-            data_for_plugins.delete_if{|plugin_info| repo_managed_plugin_names.include?(plugin_info['name']) }.each do |plugin_info|
+            remote_zip_plugin_names = (fetch(:additional_plugins_from_remote_zip) || {}).keys
+
+            # Skip plugins that are repo-managed
+            data_for_plugins.delete_if{|plugin_info| repo_managed_plugin_names.include?(plugin_info['name']) }
+            # Skip plugins that come from a remote zip url
+            data_for_plugins.delete_if{|plugin_info| remote_zip_plugin_names.include?(plugin_info['name']) }
+
+            data_for_plugins.each do |plugin_info|
               name = plugin_info['name']
               version = plugin_info['version']
               status = plugin_info['status']
