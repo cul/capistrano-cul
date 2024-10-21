@@ -16,9 +16,6 @@ namespace :cul do
           # Destroy and recreate the docroot
           execute :rm, '-rf', fetch(:wp_docroot), '&&', 'mkdir', fetch(:wp_docroot)
 
-          # Create nginx logs directory if it doesn't already exist
-          execute :mkdir, '-p', deploy_path.join('logs')
-
           # Download and unpack latest version of WP to wp_docroot
           execute :wp, 'core', ['download', "--version=latest", "--path=#{fetch(:wp_docroot)}"]
 
@@ -29,9 +26,7 @@ namespace :cul do
 
           # Our limited-content wp-config file will only contain the following:
           # ----------------------------------------------------------
-          # require dirname(__DIR__) . '/conf/the-real-conf.php';
-          #
-          #/* That's all, stop editing! Happy blogging. */
+          # require dirname(__DIR__) . '/shared/wp-config-include.php';
           #
           #/** WordPress absolute path to the Wordpress directory. */
           #if ( !defined('ABSPATH') )
@@ -46,8 +41,6 @@ namespace :cul do
               '\\n' +
               "require dirname(__DIR__) . '/shared/wp-config-include.php';" +
               '\\n\\n' +
-              "/* That's all, stop editing! Happy blogging. */" +
-              '\\n' +
               "/** WordPress absolute path to the Wordpress directory. */" +
               '\\n' +
               "if ( !defined('ABSPATH') ) { define('ABSPATH', dirname(__FILE__) . '/'); }" +
