@@ -107,7 +107,8 @@ namespace :cul do
       desc 'Symlink the wp-content wflogs directory to a corresponding directory in /var'
       task :symlink_wflogs_to_var_directory do
         wp_docroot_wflogs_path = File.join(fetch(:wp_docroot), 'wp-content', 'wflogs')
-        local_disk_wflogs_path = File.join(fetch(:local_disk_wflogs_path), wp_docroot_wflogs_path.sub(/^\/opt/, '/var'))
+        local_disk_wflogs_path = fetch(:local_disk_wflogs_path, '')
+        raise 'Missing required cap variable :local_disk_wflogs_path' unless local_disk_wflogs_path.length.positive?
 
         on roles(:web) do
           # Create target var wflogs dir if it doesn't exist
