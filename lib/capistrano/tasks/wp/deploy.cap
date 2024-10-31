@@ -14,6 +14,8 @@ namespace :cul do
       desc "Verifies that all deployed-related cap variables have been set in the application's deploy config."
       task :require_deploy_cap_variables do
         require_cap_variables!([:branch, :wp_docroot, :multisite])
+        # If this is a multisite, then the type of multisite needs to be specified (subdomains or subdirectories)
+        require_cap_variables!([:multisite_type]) if fetch(:multisite)
       end
 
       desc "Displays a message to the deploying user about how to disable maintenance mode"

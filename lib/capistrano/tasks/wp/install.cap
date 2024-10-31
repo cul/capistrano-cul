@@ -21,12 +21,17 @@ namespace :cul do
           # Drop existing database
           execute :wp, 'db', 'reset', '--yes'
 
-          execute :wp, 'core', fetch(:multisite) ? 'multisite-install' : 'install',
+          install_args = [
+            fetch(:multisite) ? 'multisite-install' : 'install',
             "--url='#{fetch(:url)}'",
             "--title='#{fetch(:title)}'",
             "--admin_user='#{fetch(:admin_user)}'",
             "--admin_password='#{fetch(:admin_password)}'",
             "--admin_email='#{fetch(:admin_email)}'"
+          ]
+          install_args << "--subdomains" if fetch(:multisite) && fetch(:multisite_type) == 'subdomains'
+
+          execute :wp, 'core', *install_args
         end
       end
     end
