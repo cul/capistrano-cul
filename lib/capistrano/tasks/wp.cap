@@ -1,4 +1,4 @@
-set :cul_allowed_upload_types_version, 'v0.5.0' # can be overridden by an app's deploy.rb file
+set :cul_allowed_upload_types_version, 'v0.6.0' # can be overridden by an app's deploy.rb file
 set :cul_allowed_upload_types_plugin_name, 'cul-allowed-upload-types'
 set :cul_allowed_upload_types_downloaded_plugin_path, ->{current_path.join(fetch(:cul_allowed_upload_types_plugin_name))} # can be overridden by an app's deploy.rb file
 

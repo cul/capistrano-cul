@@ -19,6 +19,9 @@ namespace :cul do
           # Download and unpack latest version of WP to wp_docroot
           execute :wp, 'core', ['download', "--version=latest", "--path=#{fetch(:wp_docroot)}"]
 
+          # Delete the unnecessary hello.php plugin that's included with a default installation
+          execute :rm, File.join(fetch(:wp_docroot), 'wp-content/plugins/hello.php')
+
           # Create a limited-content wp-config.php file that requires our shared
           # wp-config-include.php file. We do this so that wordpress still has a
           # wp-config.php file at the expected location, and that file correctly

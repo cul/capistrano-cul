@@ -143,6 +143,21 @@ namespace :cul do
               ]
             )
 
+            # Then copy all .htaccess files in the docroot
+            execute :rsync, (
+              rsync_base_params +
+              [
+                # Include .htaccess files
+                '--include=".htaccess"',
+                # Exclude everything else not included by --include filters
+                '--exclude="*"',
+                # src directory
+                fetch(:remote_user) + '@' + fetch(:src_wp_server) + ':' + File.join(fetch(:src_wp_docroot), '/.'), # trailing '/.' so that .htaccess files are included in the sync scope
+                # dest directory
+                fetch(:wp_docroot)
+              ]
+            )
+
           end
         end
 
@@ -151,10 +166,24 @@ namespace :cul do
 
         on roles(:web) do
           within dest_wp_content_path do
-            files_not_copied = capture(:comm, '-23',
-              "<(ssh #{fetch(:remote_user)}@#{fetch(:src_wp_server)} \"cd #{src_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\) | LC_ALL=C sort\")",
-              "<(cd #{dest_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\) | LC_ALL=C sort)"
-            )
+            copy_source_file_list = File.join(fetch(:deploy_to), 'copy-source-file-list.txt')
+            copy_dest_file_list = File.join(fetch(:deploy_to), 'copy-dest-local-file-list.txt')
+
+            # NOTE: We write the output of file scan operations to a file because there are sometime newline
+            # character issues with the `find` operation output is streamed through the capistrano `execute` method.
+            source_file_list_command = "ssh #{fetch(:remote_user)}@#{fetch(:src_wp_server)} \"cd #{src_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\)\" > #{copy_source_file_list}"
+            destination_file_list_command = "cd #{dest_wp_content_path} && find . -type f \\( -path '*/uploads/*' -o -path '*/blogs.dir/*' \\) > #{copy_dest_file_list}"
+
+            execute(source_file_list_command)
+            execute(destination_file_list_command)
+
+            source_file_list_raw_output = capture("cat #{copy_source_file_list} && rm #{copy_source_file_list}")
+            destination_file_list_raw_output = capture("cat #{copy_dest_file_list} && rm #{copy_dest_file_list}")
+
+            source_file_set = Set.new(source_file_list_raw_output.split("\n"))
+            destination_file_set = Set.new(destination_file_list_raw_output.split("\n"))
+
+            files_not_copied = (source_file_set - destination_file_set).to_a.sort
 
             # Generate list of files that weren't copied. Display this list to the user.
             puts (
@@ -163,18 +192,18 @@ namespace :cul do
               "./plugins\n" +
               "./mu-plugins\n" +
               "./themes\n" +
-              (files_not_copied.length > 0 ? files_not_copied + "\n" : '') +
+              (files_not_copied.length > 0 ? files_not_copied.join("\n") + "\n" : '') +
               "-------------------------"
             )
           end
         end
-
       end
 
       desc "Copies certain wp-content (everything other than plugins, themes, and mu-plugins) from one environment to another (e.g. prod to dev). This task is part of the :copy_from task and isn't meant to be called directly."
       task :copy_database do
-        remote_server_db_export_tempfile_path = Tempfile.create(['db_export_tempfile', '.sql'], '/tmp/').path
-        local_server_db_export_file_path = File.join(fetch(:wp_docroot), File.basename(remote_server_db_export_tempfile_path))
+        export_filename = "db_export_tempfile-#{SecureRandom.uuid}.sql"
+        remote_server_db_export_tempfile_path = File.join(fetch(:src_wp_docroot), '..', export_filename)
+        local_server_db_export_file_path = File.join(fetch(:wp_docroot), '..', export_filename)
 
         # Export database from source WordPress instance
         on fetch(:remote_user) + '@' + fetch(:src_wp_server) do
