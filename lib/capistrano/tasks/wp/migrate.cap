@@ -197,6 +197,11 @@ namespace :cul do
             )
           end
         end
+        unless enter_y_to_continue("Does that list look okay? Normally it should only include plugins, mu-plugins, and themes.")
+          puts 'Exiting because the list did not look okay.'
+          exit
+          puts 'nope'
+        end
       end
 
       desc "Copies certain wp-content (everything other than plugins, themes, and mu-plugins) from one environment to another (e.g. prod to dev). This task is part of the :copy_from task and isn't meant to be called directly."
